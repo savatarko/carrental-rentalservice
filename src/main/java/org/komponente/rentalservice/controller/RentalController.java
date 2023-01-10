@@ -30,20 +30,20 @@ public class RentalController {
         return new ResponseEntity<>(rentalService.searchVehicles(carSearchFilterDto), HttpStatus.OK);
     }
 
-    @PostMapping("/{id}")
+    @PostMapping("/reserve}")
     @CheckSecurity(roles = {"ROLE_CLIENT"})
     public ResponseEntity<?> rentVehicle(@RequestHeader("Authorization") String authorization, @RequestBody @Valid ActiveReservationCreateDto newres){
-        return new ResponseEntity<>(rentalService.reserveVehicle(newres, tokenService.parseToken(authorization).get("Id", Long.class)), HttpStatus.OK);
+        return new ResponseEntity<>(rentalService.reserveVehicle(newres), HttpStatus.OK);
     }
 
-    @PutMapping("/review/{id}")
+    @PutMapping("/review/{rentId}")
     @CheckSecurity(roles = {"ROLE_CLIENT"})
-    public ResponseEntity<?> rentVehicle(@RequestHeader("Authorization") String authorization,@PathVariable Long rentId, @RequestBody @Valid ReviewDto reviewDto){
+    public ResponseEntity<?> leaveAReview(@RequestHeader("Authorization") String authorization,@PathVariable Long rentId, @RequestBody @Valid ReviewDto reviewDto){
 
         return new ResponseEntity<>(rentalService.leaveAReview(rentId,tokenService.parseToken(authorization).get("id", Long.class), reviewDto) ,HttpStatus.OK);
     }
 
-    @DeleteMapping("/cancel/{id}")
+    @DeleteMapping("/cancel/{rentId}")
     @CheckSecurity(roles = {"ROLE_CLIENT", "ROLE_MANAGER"})
     public ResponseEntity<?> cancelReservation(@RequestHeader("Authorization") String authorization,@PathVariable Long rentId){
 

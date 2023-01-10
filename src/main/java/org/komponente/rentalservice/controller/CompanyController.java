@@ -35,6 +35,6 @@ public class CompanyController {
     public ResponseEntity<CompanyDto> assignCompany(@RequestHeader("Authorization") String authorization, @PathVariable Long id)
     {
         //TODO: kako se zove id u tokenu, jel malo ili veliko id?
-        return new ResponseEntity<>(companyService.registerManagerToCompany(id, tokenService.parseToken(authorization).get("id", Long.class)), HttpStatus.OK);
+        return new ResponseEntity<>(companyService.registerManagerToCompany(id, tokenService.parseToken(authorization).get("Id", Long.class)), HttpStatus.OK);
     }
 }

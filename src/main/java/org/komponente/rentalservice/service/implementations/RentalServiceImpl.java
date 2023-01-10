@@ -92,7 +92,7 @@ public class RentalServiceImpl implements RentalService {
         return output;
     }
 
-    public ActiveReservationDto reserveVehicle(ActiveReservationCreateDto newreservation, Long clientId)
+    public ActiveReservationDto reserveVehicle(ActiveReservationCreateDto newreservation)
     {
         CompanyCar companyCar = companyCarRepository.findById(newreservation.getCompanycarid()).orElse(null);
         if(companyCar == null)

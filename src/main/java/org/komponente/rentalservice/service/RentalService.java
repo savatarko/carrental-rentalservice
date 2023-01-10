@@ -14,7 +14,7 @@ import java.util.List;
 public interface RentalService {
     List<VehicleDto> searchVehicles(CarSearchFilterDto carSearchFilterDto);
 
-    ActiveReservationDto reserveVehicle(ActiveReservationCreateDto newreservation, Long clientId);
+    ActiveReservationDto reserveVehicle(ActiveReservationCreateDto newreservation);
     ReviewDto leaveAReview(Long rentalId, Long userId, ReviewDto reviewDto);
     void cancelReservation(Long rentalId, Claims claims);
 }
