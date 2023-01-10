@@ -23,4 +23,6 @@ public class Company {
 
     private String description;
 
+    private Long managerid;
+
 }
