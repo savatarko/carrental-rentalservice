@@ -4,6 +4,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.AllArgsConstructor;
 import org.komponente.dto.client.ClientCreateDto;
 import org.komponente.dto.client.ClientDto;
+import org.komponente.dto.company.ChangeCompanyDto;
 import org.komponente.dto.company.CompanyCreateDto;
 import org.komponente.dto.company.CompanyDto;
 import org.komponente.rentalservice.security.CheckSecurity;
@@ -31,11 +32,19 @@ public class CompanyController {
     }
 
     @ApiOperation("Assign manager")
-    @RequestMapping("/assign/{id}")
+    @PutMapping("/assign/{id}")
     @CheckSecurity(roles = {"ROLE_MANAGER", "ROLE_ADMIN"})
     public ResponseEntity<CompanyDto> assignCompany(@RequestHeader("Authorization") String authorization, @PathVariable Long id)
     {
         //TODO: kako se zove id u tokenu, jel malo ili veliko id?
         return new ResponseEntity<>(companyService.registerManagerToCompany(id, tokenService.parseToken(authorization).get("Id", Long.class)), HttpStatus.OK);
+    }
+
+    @ApiOperation("Change company")
+    @PutMapping("/change/{id}")
+    @CheckSecurity(roles = {"ROLE_MANAGER"})
+    public ResponseEntity<CompanyDto> changeCompany(@RequestHeader("Authorization") String authorization, @RequestBody @Valid ChangeCompanyDto changeCompanyDto, @PathVariable Long id)
+    {
+        return new ResponseEntity<>(companyService.changeCompany(changeCompanyDto, tokenService.parseToken(authorization).get("Id", Long.class)), HttpStatus.OK);
     }
 }

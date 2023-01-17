@@ -2,16 +2,22 @@ package org.komponente.rentalservice.service.implementations;
 
 import io.jsonwebtoken.Claims;
 import lombok.AllArgsConstructor;
+import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.command.ActiveMQQueue;
 import org.komponente.dto.carrental.CompanyCarDto;
 import org.komponente.dto.client.ClientDto;
+import org.komponente.dto.email.CancelReservationClientNotification;
+import org.komponente.dto.email.CancelReservationManagerNotification;
 import org.komponente.dto.requests.CarSearchFilterDto;
 import org.komponente.dto.reservation.ActiveReservationCreateDto;
 import org.komponente.dto.reservation.ActiveReservationDto;
 import org.komponente.dto.review.ReviewDto;
+import org.komponente.dto.user.UserDto;
 import org.komponente.dto.vehicle.VehicleDto;
 import org.komponente.rentalservice.domain.*;
 import org.komponente.rentalservice.exceptions.*;
 import org.komponente.rentalservice.mapper.ActiveReservationMapper;
+import org.komponente.rentalservice.mapper.MessageMapper;
 import org.komponente.rentalservice.mapper.VehicleMapper;
 import org.komponente.rentalservice.repository.*;
 import org.komponente.rentalservice.security.token.TokenService;
@@ -20,6 +26,8 @@ import org.komponente.rentalservice.service.RentalService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.jms.*;
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -36,6 +44,25 @@ public class RentalServiceImpl implements RentalService {
     //private TokenService tokenService;
 
     private final String userserviceurl = "http://localhost:8081/api";
+
+    private void sendMessage(Serializable content, String queueName) {
+        try {
+            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
+            Connection connection = connectionFactory.createConnection();
+            connection.start();
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            Destination destination = new ActiveMQQueue(queueName);
+            MessageProducer producer = session.createProducer(destination);
+            ObjectMessage message = session.createObjectMessage(content);
+            producer.send(message);
+            producer.close();
+            session.close();
+            connection.close();
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+    }
 
 
     @Override
@@ -92,7 +119,7 @@ public class RentalServiceImpl implements RentalService {
         return output;
     }
 
-    public ActiveReservationDto reserveVehicle(ActiveReservationCreateDto newreservation)
+    public ActiveReservationDto reserveVehicle(ActiveReservationCreateDto newreservation, Long clientid)
     {
         CompanyCar companyCar = companyCarRepository.findById(newreservation.getCompanycarid()).orElse(null);
         if(companyCar == null)
@@ -119,7 +146,7 @@ public class RentalServiceImpl implements RentalService {
                 }
             }
         }
-        String path = userserviceurl.concat("/rank/" + newreservation.getClientid());
+        String path = userserviceurl.concat("/rank/" + clientid);
         RestTemplate restTemplate = new RestTemplate();
         Long rankdiscount = restTemplate.getForObject(path, Long.class);
 
@@ -157,13 +184,31 @@ public class RentalServiceImpl implements RentalService {
             throw new UnauthorizedException("Cannot cancel reservation that isn't yours!");
         }
         //TODO: za menadzera moram da pozovem userservice da vidim u kojoj firmi menadzer radi
-        /*
-        if(role.equals("ROLE_MANAGER")){
-            if(activeReservation.getCompanyCar().getCompany().getId()!=
-        }
 
-         */
+        if(role.equals("ROLE_MANAGER")){
+
+            String path = userserviceurl.concat("/user/manager/" + userId);
+            RestTemplate restTemplate = new RestTemplate();
+            Long companyId = restTemplate.getForObject(path, Long.class);
+
+            if(!Objects.equals(activeReservation.getCompanyCar().getCompany().getId(), companyId)){
+                throw new UnauthorizedException("Cannot cancel reservation that isn't from your company!");
+            }
+        }
+        Long clientId = activeReservation.getClientId();
+        Long managerId = activeReservation.getCompanyCar().getCompany().getManagerid();
+
         activeReservationRepository.delete(activeReservation);
+
+        String path = userserviceurl.concat("/user/" + clientId);
+        RestTemplate restTemplate = new RestTemplate();
+        UserDto client = restTemplate.getForObject(path, UserDto.class);
+        path = userserviceurl.concat("/user/" + managerId);
+        UserDto manager = restTemplate.getForObject(path, UserDto.class);
         //TODO: notify servis ovde
+        CancelReservationClientNotification clientmessage = MessageMapper.cancelReservationClientNotificationBuilder(client);
+        CancelReservationManagerNotification managermessage = MessageMapper.cancelReservationManagerNotificationBuilder(manager);
+        sendMessage(clientmessage, "cancelreservationclient");
+        sendMessage(managermessage, "cancelreservationmanager");
     }
 }

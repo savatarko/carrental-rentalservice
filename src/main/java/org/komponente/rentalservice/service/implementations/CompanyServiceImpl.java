@@ -1,6 +1,7 @@
 package org.komponente.rentalservice.service.implementations;
 
 import lombok.AllArgsConstructor;
+import org.komponente.dto.company.ChangeCompanyDto;
 import org.komponente.dto.company.CompanyCreateDto;
 import org.komponente.dto.company.CompanyDto;
 import org.komponente.rentalservice.domain.Company;
@@ -34,6 +35,15 @@ public class CompanyServiceImpl implements CompanyService {
             throw new CompanyAlreadyHasManagerException("Company with id " + companyid + " already has a manager assigned.");
         }
         company.setManagerid(id);
+        companyRepository.save(company);
+        return CompanyMapper.companyToCompanyDto(company);
+    }
+
+    @Override
+    public CompanyDto changeCompany(ChangeCompanyDto companyDto, Long managerid) {
+        Company company = companyRepository.findCompanyByManagerid(managerid).orElseThrow(()->new NotFoundException("Company with managerid " + managerid +" not found!"));
+        company.setName(companyDto.getName());
+        company.setDescription(companyDto.getDescription());
         companyRepository.save(company);
         return CompanyMapper.companyToCompanyDto(company);
     }

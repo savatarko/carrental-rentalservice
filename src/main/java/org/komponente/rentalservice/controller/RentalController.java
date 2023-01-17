@@ -1,6 +1,7 @@
 package org.komponente.rentalservice.controller;
 
 import io.jsonwebtoken.Jwts;
+import lombok.AllArgsConstructor;
 import org.komponente.dto.carrental.CompanyCarDto;
 import org.komponente.dto.requests.CarSearchFilterDto;
 import org.komponente.dto.reservation.ActiveReservationCreateDto;
@@ -33,7 +34,8 @@ public class RentalController {
     @PostMapping("/reserve}")
     @CheckSecurity(roles = {"ROLE_CLIENT"})
     public ResponseEntity<?> rentVehicle(@RequestHeader("Authorization") String authorization, @RequestBody @Valid ActiveReservationCreateDto newres){
-        return new ResponseEntity<>(rentalService.reserveVehicle(newres), HttpStatus.OK);
+        Long id = tokenService.parseToken(authorization).get("id", Long.class);
+        return new ResponseEntity<>(rentalService.reserveVehicle(newres, id), HttpStatus.OK);
     }
 
     @PutMapping("/review/{rentId}")
