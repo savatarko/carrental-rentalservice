@@ -24,6 +24,7 @@ public class CompanyController {
 
     @ApiOperation(value = "Register company")
     @PostMapping("/register")
+    @CheckSecurity(roles = {"ROLE_ADMIN"})
     public ResponseEntity<CompanyDto> registerCompany(@RequestBody @Valid CompanyCreateDto companyCreateDto)
     {
         return new ResponseEntity<>(companyService.createCompany(companyCreateDto), HttpStatus.CREATED);
@@ -31,7 +32,7 @@ public class CompanyController {
 
     @ApiOperation("Assign manager")
     @RequestMapping("/assign/{id}")
-    @CheckSecurity(roles = {"ROLE_MANAGER"})
+    @CheckSecurity(roles = {"ROLE_MANAGER", "ROLE_ADMIN"})
     public ResponseEntity<CompanyDto> assignCompany(@RequestHeader("Authorization") String authorization, @PathVariable Long id)
     {
         //TODO: kako se zove id u tokenu, jel malo ili veliko id?

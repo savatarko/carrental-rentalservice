@@ -2,9 +2,9 @@ package org.komponente.rentalservice.exceptions;
 
 import org.springframework.http.HttpStatus;
 
-public class CompanyAlreadyExistsException extends CustomException{
+public class AlreadyExistsException extends CustomException{
 
-    public CompanyAlreadyExistsException(String message) {
+    public AlreadyExistsException(String message) {
         super(message, ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST);
     }
 }

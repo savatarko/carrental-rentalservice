@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import org.komponente.dto.company.CompanyCreateDto;
 import org.komponente.dto.company.CompanyDto;
 import org.komponente.rentalservice.domain.Company;
-import org.komponente.rentalservice.exceptions.CompanyAlreadyExistsException;
+import org.komponente.rentalservice.exceptions.AlreadyExistsException;
 import org.komponente.rentalservice.exceptions.CompanyAlreadyHasManagerException;
 import org.komponente.rentalservice.exceptions.NotFoundException;
 import org.komponente.rentalservice.mapper.CompanyMapper;
@@ -19,7 +19,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     public CompanyDto createCompany(CompanyCreateDto companyCreateDto){
         if(companyRepository.findCompanyByName(companyCreateDto.getName()) != null){
-            throw new CompanyAlreadyExistsException("Company with name " + companyCreateDto.getName() + " already exists");
+            throw new AlreadyExistsException("Company with name " + companyCreateDto.getName() + " already exists");
         }
         Company company = CompanyMapper.companyCreateDtoToCompany(companyCreateDto);
         company.setManagerid((long) -1);
