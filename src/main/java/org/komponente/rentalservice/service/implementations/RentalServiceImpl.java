@@ -1,5 +1,6 @@
 package org.komponente.rentalservice.service.implementations;
 
+import io.github.resilience4j.retry.Retry;
 import io.jsonwebtoken.Claims;
 import lombok.AllArgsConstructor;
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -22,8 +23,15 @@ import org.komponente.rentalservice.mapper.VehicleMapper;
 import org.komponente.rentalservice.repository.*;
 import org.komponente.rentalservice.security.token.TokenService;
 import org.komponente.rentalservice.service.CompanyService;
+import org.komponente.rentalservice.service.NormalTokenService;
 import org.komponente.rentalservice.service.RentalService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.jms.*;
@@ -40,8 +48,13 @@ public class RentalServiceImpl implements RentalService {
     private ActiveReservationRepository activeReservationRepository;
     private CompletedRentalRepository completedRentalRepository;
     private CompanyCarRepository companyCarRepository;
+    private Retry userServiceRetry;
 
+    //@Autowired
     //private TokenService tokenService;
+
+    @Autowired
+    private NormalTokenService normalTokenService;
 
     private final String userserviceurl = "http://localhost:8081/api";
 
@@ -118,9 +131,24 @@ public class RentalServiceImpl implements RentalService {
         }
         return output;
     }
-
-    public ActiveReservationDto reserveVehicle(ActiveReservationCreateDto newreservation, Long clientid)
+    private Long getRankDiscount(Claims claims, String authorization){
+            String path = userserviceurl.concat("/rank/" + claims.get("id", Long.class));
+            RestTemplate restTemplate = new RestTemplate();
+            //Long rankdiscount = restTemplate.getForObject(path, Long.class);
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Authorization", authorization);
+            try{
+            Long rankdiscount = restTemplate.exchange(path, HttpMethod.GET, new HttpEntity<>(headers), Long.class).getBody();
+            return rankdiscount;
+            }
+            catch (HttpClientErrorException e){
+                e.printStackTrace();
+            }
+            return null;
+    }
+    public ActiveReservationDto reserveVehicle(ActiveReservationCreateDto newreservation, String authorization)
     {
+        Claims claims = normalTokenService.parseToken(authorization);
         CompanyCar companyCar = companyCarRepository.findById(newreservation.getCompanycarid()).orElse(null);
         if(companyCar == null)
         {
@@ -146,22 +174,34 @@ public class RentalServiceImpl implements RentalService {
                 }
             }
         }
-        String path = userserviceurl.concat("/rank/" + clientid);
+
+        /*
+        String path = userserviceurl.concat("/rank/" + claims.get("id", Long.class));
         RestTemplate restTemplate = new RestTemplate();
-        Long rankdiscount = restTemplate.getForObject(path, Long.class);
+        //Long rankdiscount = restTemplate.getForObject(path, Long.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", authorization);
+        Long rankdiscount = restTemplate.exchange(path, HttpMethod.GET, new HttpEntity<>(headers), Long.class).getBody();
+        //ResponseEntity<Long> response = restTemplate.getForEntity(path, Long.class);
+
+         */
+        Long rankdiscount = Retry.decorateSupplier(userServiceRetry, () -> getRankDiscount(claims, authorization)).get();
 
         ActiveReservation activeReservation = ActiveReservationMapper.activeReservationCreateDtoToActiveReservation(newreservation);
-        Long totalprice = Duration.between(activeReservation.getBegindate(), activeReservation.getEnddate()).toDays() * companyCar.getPrice() / rankdiscount;
+        activeReservation.setClientId(claims.get("id", Long.class));
+        Long totalprice = Duration.between(activeReservation.getBegindate().atTime(0,0), activeReservation.getEnddate().atTime(0,0)).toDays() * companyCar.getPrice() / rankdiscount;
         activeReservation.setTotalprice(totalprice);
         activeReservationRepository.save(activeReservation);
         return ActiveReservationMapper.activeReservationToActiveReservationDto(activeReservation);
     }
 
     @Override
-    public ReviewDto leaveAReview(Long rentalId,Long userId, ReviewDto reviewDto) {
+    public ReviewDto leaveAReview(Long rentalId,String authorization, ReviewDto reviewDto) {
+        Claims claims = normalTokenService.parseToken(authorization);
         //TODO: SECURITY CHECK!!!!
         //CompletedRental completedRental = completedRentalRepository.getReferenceById(rentalId);
         CompletedRental completedRental = completedRentalRepository.findById(rentalId).orElseThrow(()->new NotFoundException("Rental with id " + rentalId +" not found!"));
+        Long userId = claims.get("id", Long.class);
         if(completedRental.getClientId()!=userId){
             throw new UnauthorizedException("You can't leave a review for someone else's rental experience!");
         }
@@ -175,8 +215,40 @@ public class RentalServiceImpl implements RentalService {
         return reviewDto;
     }
 
+    private Long getCompanyId(String path, String authorization){
+
+        RestTemplate restTemplate = new RestTemplate();
+        //Long rankdiscount = restTemplate.getForObject(path, Long.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", authorization);
+        try{
+            Long companyId = restTemplate.exchange(path, HttpMethod.GET, new HttpEntity<>(headers), Long.class).getBody();
+            return companyId;
+        }
+        catch (HttpClientErrorException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private UserDto getUserDto(String path, String authorization){
+        RestTemplate restTemplate = new RestTemplate();
+        //Long rankdiscount = restTemplate.getForObject(path, Long.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", authorization);
+        try{
+            UserDto userDto = restTemplate.exchange(path, HttpMethod.GET, new HttpEntity<>(headers), UserDto.class).getBody();
+            return userDto;
+        }
+        catch (HttpClientErrorException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     @Override
-    public void cancelReservation(Long rentalId, Claims claims) {
+    public void cancelReservation(Long rentalId, String authorization) {
+        Claims claims =normalTokenService.parseToken(authorization);
         Long userId = claims.get("id", Long.class);
         String role = claims.get("role", String.class);
         ActiveReservation activeReservation = activeReservationRepository.findById(rentalId).orElseThrow(()->new NotFoundException("Reservation with id " + rentalId +" not found!"));
@@ -187,9 +259,14 @@ public class RentalServiceImpl implements RentalService {
 
         if(role.equals("ROLE_MANAGER")){
 
+            /*
             String path = userserviceurl.concat("/user/manager/" + userId);
             RestTemplate restTemplate = new RestTemplate();
             Long companyId = restTemplate.getForObject(path, Long.class);
+
+             */
+            String path = userserviceurl.concat("/user/manager/" + userId);
+            Long companyId = getCompanyId(path, authorization);
 
             if(!Objects.equals(activeReservation.getCompanyCar().getCompany().getId(), companyId)){
                 throw new UnauthorizedException("Cannot cancel reservation that isn't from your company!");
@@ -201,10 +278,10 @@ public class RentalServiceImpl implements RentalService {
         activeReservationRepository.delete(activeReservation);
 
         String path = userserviceurl.concat("/user/" + clientId);
-        RestTemplate restTemplate = new RestTemplate();
-        UserDto client = restTemplate.getForObject(path, UserDto.class);
-        path = userserviceurl.concat("/user/" + managerId);
-        UserDto manager = restTemplate.getForObject(path, UserDto.class);
+        //RestTemplate restTemplate = new RestTemplate();
+        UserDto client = Retry.decorateSupplier(userServiceRetry,()->  getUserDto(path, authorization)).get();
+        String path1 = userserviceurl.concat("/user/" + managerId);
+        UserDto manager = Retry.decorateSupplier(userServiceRetry,()->  getUserDto(path1, authorization)).get();
         //TODO: notify servis ovde
         CancelReservationClientNotification clientmessage = MessageMapper.cancelReservationClientNotificationBuilder(client);
         CancelReservationManagerNotification managermessage = MessageMapper.cancelReservationManagerNotificationBuilder(manager);
