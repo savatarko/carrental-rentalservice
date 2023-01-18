@@ -41,24 +41,23 @@ public class RentalController {
         return new ResponseEntity<>(rentalService.searchVehicles(carSearchFilterDto), HttpStatus.OK);
     }
 
-    @PostMapping("/reserve}")
+    @PostMapping("/reserve")
     //@CheckSecurity(roles = {"ROLE_CLIENT"})
     public ResponseEntity<?> rentVehicle(@RequestHeader("Authorization") String authorization, @RequestBody @Valid ActiveReservationCreateDto newres){
         //Long id = normalTokenService.parseToken(authorization).get("id", Long.class);
         return new ResponseEntity<>(rentalService.reserveVehicle(newres, authorization), HttpStatus.OK);
     }
 
-    @PutMapping("/review/{rentId}")
+    @PutMapping("/review")
     @CheckSecurity(roles = {"ROLE_CLIENT"})
-    public ResponseEntity<?> leaveAReview(@RequestHeader("Authorization") String authorization,@PathVariable Long rentId, @RequestBody @Valid ReviewDto reviewDto){
+    public ResponseEntity<?> leaveAReview(@RequestHeader("Authorization") String authorization, @RequestBody @Valid ReviewDto reviewDto){
 
-        return new ResponseEntity<>(rentalService.leaveAReview(rentId,authorization, reviewDto) ,HttpStatus.OK);
+        return new ResponseEntity<>(rentalService.leaveAReview(authorization, reviewDto) ,HttpStatus.OK);
     }
 
     @DeleteMapping("/cancel/{rentId}")
     @CheckSecurity(roles = {"ROLE_CLIENT", "ROLE_MANAGER"})
     public ResponseEntity<?> cancelReservation(@RequestHeader("Authorization") String authorization,@PathVariable Long rentId){
-
         rentalService.cancelReservation(rentId, authorization);
         return new ResponseEntity<>(HttpStatus.OK);
     }

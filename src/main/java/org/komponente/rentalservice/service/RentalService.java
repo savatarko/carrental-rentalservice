@@ -15,6 +15,6 @@ public interface RentalService {
     List<VehicleDto> searchVehicles(CarSearchFilterDto carSearchFilterDto);
 
     ActiveReservationDto reserveVehicle(ActiveReservationCreateDto newreservation, String authorization);
-    ReviewDto leaveAReview(Long rentalId, String authorization, ReviewDto reviewDto);
+    ReviewDto leaveAReview(String authorization, ReviewDto reviewDto);
     void cancelReservation(Long rentalId, String authorization);
 }

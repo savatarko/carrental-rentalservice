@@ -196,7 +196,8 @@ public class RentalServiceImpl implements RentalService {
     }
 
     @Override
-    public ReviewDto leaveAReview(Long rentalId,String authorization, ReviewDto reviewDto) {
+    public ReviewDto leaveAReview(String authorization, ReviewDto reviewDto) {
+        Long rentalId = reviewDto.getId();
         Claims claims = normalTokenService.parseToken(authorization);
         //TODO: SECURITY CHECK!!!!
         //CompletedRental completedRental = completedRentalRepository.getReferenceById(rentalId);
