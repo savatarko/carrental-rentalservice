@@ -19,18 +19,17 @@ public class ActiveReservationMapper {
 
     public static ActiveReservationDto activeReservationToActiveReservationDto(ActiveReservation activeReservation){
         ActiveReservationDto activeReservationDto = new ActiveReservationDto();
-        activeReservationDto.setBegindate(activeReservationDto.getBegindate());
+        activeReservationDto.setBegindate(activeReservation.getBegindate());
         activeReservationDto.setEnddate(activeReservation.getEnddate());
-        activeReservationDto.setId(activeReservationDto.getId());
-        activeReservationDto.setTotalprice(activeReservationDto.getTotalprice());
-        activeReservationDto.setClientId(activeReservationDto.getClientId());
+        activeReservationDto.setId(activeReservation.getId());
+        activeReservationDto.setTotalprice(activeReservation.getTotalprice());
+        activeReservationDto.setClientId(activeReservation.getClientId());
         activeReservationDto.setCompanyCarDto(CompanyCarMapper.companyCarToCompanyCarDto(activeReservation.getCompanyCar()));
         return activeReservationDto;
     }
     public static ActiveReservation activeReservationCreateDtoToActiveReservation(ActiveReservationCreateDto activeReservationCreateDto)
     {
         ActiveReservation activeReservation = new ActiveReservation();
-        activeReservation.setTotalprice(activeReservationCreateDto.getTotalprice());
         activeReservation.setBegindate(activeReservationCreateDto.getBegindate());
         activeReservation.setEnddate(activeReservationCreateDto.getEnddate());
         activeReservation.setClientId(activeReservation.getClientId());

@@ -1,11 +1,15 @@
 package org.komponente.rentalservice.controller;
 
+import io.swagger.annotations.ApiOperation;
 import lombok.AllArgsConstructor;
 import org.komponente.dto.carrental.CompanyCarChangeDto;
 import org.komponente.dto.carrental.CompanyCarCreateDto;
 import org.komponente.dto.requests.CarSearchFilterDto;
+import org.komponente.dto.user.UserDto;
 import org.komponente.dto.vehicle.VehicleCreateDto;
+import org.komponente.dto.vehicle.VehicleDto;
 import org.komponente.dto.vehicle.VehicleTypeCreateDto;
+import org.komponente.dto.vehicle.VehicleTypeDto;
 import org.komponente.rentalservice.security.CheckSecurity;
 import org.komponente.rentalservice.service.VehicleService;
 import org.springframework.http.HttpStatus;
@@ -13,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @AllArgsConstructor
 @RestController
@@ -49,5 +54,21 @@ public class VehicleController {
     @CheckSecurity(roles = {"ROLE_MANAGER"})
     public ResponseEntity<?> updateCompanyCar(@RequestHeader("Authorization") String authorization, @RequestBody @Valid CompanyCarChangeDto companyCarChangeDto){
         return new ResponseEntity<>(vehicleService.changePrice(companyCarChangeDto), HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Get all vehicle types (manager purposes)")
+    @GetMapping("/types")
+    @CheckSecurity(roles = {"ROLE_MAANGER"})
+    public ResponseEntity<List<VehicleTypeDto>> getTypes()
+    {
+        return new ResponseEntity<>(vehicleService.getAllVehicleTypes(), HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Get all vehicle types (manager purposes)")
+    @GetMapping("/all")
+    @CheckSecurity(roles = {"ROLE_MAANGER"})
+    public ResponseEntity<List<VehicleDto>> getVehicles()
+    {
+        return new ResponseEntity<>(vehicleService.getAllVehicles(), HttpStatus.OK);
     }
 }

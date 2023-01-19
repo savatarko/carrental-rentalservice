@@ -7,8 +7,10 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.komponente.dto.carrental.CompanyCarDto;
 import org.komponente.dto.client.ClientDto;
+import org.komponente.dto.completedrental.CompletedRentalDto;
 import org.komponente.dto.email.CancelReservationClientNotification;
 import org.komponente.dto.email.CancelReservationManagerNotification;
+import org.komponente.dto.email.SuccessfulReservationManagerNotification;
 import org.komponente.dto.requests.CarSearchFilterDto;
 import org.komponente.dto.reservation.ActiveReservationCreateDto;
 import org.komponente.dto.reservation.ActiveReservationDto;
@@ -17,15 +19,15 @@ import org.komponente.dto.user.UserDto;
 import org.komponente.dto.vehicle.VehicleDto;
 import org.komponente.rentalservice.domain.*;
 import org.komponente.rentalservice.exceptions.*;
-import org.komponente.rentalservice.mapper.ActiveReservationMapper;
-import org.komponente.rentalservice.mapper.MessageMapper;
-import org.komponente.rentalservice.mapper.VehicleMapper;
+import org.komponente.rentalservice.mapper.*;
 import org.komponente.rentalservice.repository.*;
 import org.komponente.rentalservice.security.token.TokenService;
 import org.komponente.rentalservice.service.CompanyService;
 import org.komponente.rentalservice.service.NormalTokenService;
 import org.komponente.rentalservice.service.RentalService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -79,8 +81,8 @@ public class RentalServiceImpl implements RentalService {
 
 
     @Override
-    public List<VehicleDto> searchVehicles(CarSearchFilterDto carSearchFilterDto) {
-        List<VehicleDto> output= new ArrayList<>();
+    public List<CompanyCarDto> searchVehicles(CarSearchFilterDto carSearchFilterDto) {
+        List<CompanyCarDto> output= new ArrayList<>();
         List<CompanyCar> vehicles = companyCarRepository.findAll();
         if(carSearchFilterDto.getCompanyname()!=null)
         {
@@ -127,7 +129,7 @@ public class RentalServiceImpl implements RentalService {
         }
         for(CompanyCar v :vehicles)
         {
-            output.add(VehicleMapper.vehicleToVehicleDto(v.getVehicle()));
+            output.add(CompanyCarMapper.companyCarToCompanyCarDto(v));
         }
         return output;
     }
@@ -145,6 +147,21 @@ public class RentalServiceImpl implements RentalService {
                 e.printStackTrace();
             }
             return null;
+    }
+    private ClientDto getClientDto(Long id, String authorization){
+        String path = userserviceurl.concat("/mail/" + id);
+        RestTemplate restTemplate = new RestTemplate();
+        //Long rankdiscount = restTemplate.getForObject(path, Long.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", authorization);
+        try{
+            ClientDto clientDto = restTemplate.exchange(path, HttpMethod.GET, new HttpEntity<>(headers), ClientDto.class).getBody();
+            return clientDto;
+        }
+        catch (HttpClientErrorException e){
+            e.printStackTrace();
+        }
+        return null;
     }
     public ActiveReservationDto reserveVehicle(ActiveReservationCreateDto newreservation, String authorization)
     {
@@ -175,16 +192,6 @@ public class RentalServiceImpl implements RentalService {
             }
         }
 
-        /*
-        String path = userserviceurl.concat("/rank/" + claims.get("id", Long.class));
-        RestTemplate restTemplate = new RestTemplate();
-        //Long rankdiscount = restTemplate.getForObject(path, Long.class);
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", authorization);
-        Long rankdiscount = restTemplate.exchange(path, HttpMethod.GET, new HttpEntity<>(headers), Long.class).getBody();
-        //ResponseEntity<Long> response = restTemplate.getForEntity(path, Long.class);
-
-         */
         Long rankdiscount = Retry.decorateSupplier(userServiceRetry, () -> getRankDiscount(claims, authorization)).get();
 
         ActiveReservation activeReservation = ActiveReservationMapper.activeReservationCreateDtoToActiveReservation(newreservation);
@@ -192,6 +199,10 @@ public class RentalServiceImpl implements RentalService {
         Long totalprice = Duration.between(activeReservation.getBegindate().atTime(0,0), activeReservation.getEnddate().atTime(0,0)).toDays() * companyCar.getPrice() / rankdiscount;
         activeReservation.setTotalprice(totalprice);
         activeReservationRepository.save(activeReservation);
+
+        SuccessfulReservationManagerNotification notification = new SuccessfulReservationManagerNotification();
+
+
         return ActiveReservationMapper.activeReservationToActiveReservationDto(activeReservation);
     }
 
@@ -288,5 +299,26 @@ public class RentalServiceImpl implements RentalService {
         CancelReservationManagerNotification managermessage = MessageMapper.cancelReservationManagerNotificationBuilder(manager);
         sendMessage(clientmessage, "cancelreservationclient");
         sendMessage(managermessage, "cancelreservationmanager");
+    }
+
+    @Override
+    public List<ActiveReservationDto> getMyCurrentReservations(String authorization) {
+        Claims claims = normalTokenService.parseToken(authorization);
+        if(claims.get("role", String.class).equals("ROLE_CLIENT")){
+            Long id = claims.get("id", Long.class);
+            return activeReservationRepository.findAll().stream().filter(activeReservation -> activeReservation.getClientId().equals(id))
+                    .map(ActiveReservationMapper::activeReservationToActiveReservationDto).collect(Collectors.toList());
+        }
+        Company company = companyRepository.findCompanyByManagerid(claims.get("id", Long.class)).orElseThrow(()->new NotFoundException("Company not found!"));
+        return activeReservationRepository.findAll().stream().filter(activeReservation -> activeReservation.getCompanyCar().getCompany().getId().equals(company.getId()))
+                .map(ActiveReservationMapper::activeReservationToActiveReservationDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<CompletedRentalDto> getMyCompletedReservations(String authorization) {
+        Claims claims = normalTokenService.parseToken(authorization);
+        Long id = claims.get("id", Long.class);
+        return completedRentalRepository.findAll().stream().filter(completedRental -> completedRental.getClientId().equals(id))
+                .map(CompletedRentalMapper::completedRentalToCompletedRentalDto).collect(Collectors.toList());
     }
 }

@@ -22,6 +22,9 @@ import org.komponente.rentalservice.repository.VehicleTypeRepository;
 import org.komponente.rentalservice.service.VehicleService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @AllArgsConstructor
 @Service
 public class VehicleServiceImpl implements VehicleService {
@@ -67,6 +70,16 @@ public class VehicleServiceImpl implements VehicleService {
         companyCar.setPrice(companyCarChangeDto.getPrice());
         companyCarRepository.save(companyCar);
         return CompanyCarMapper.companyCarToCompanyCarDto(companyCar);
+    }
+
+    @Override
+    public List<VehicleTypeDto> getAllVehicleTypes() {
+        return vehicleTypeRepository.findAll().stream().map(VehicleTypeMapper::vehicleToVehicleDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<VehicleDto> getAllVehicles() {
+        return vehicleRepository.findAll().stream().map(VehicleMapper::vehicleToVehicleDto).collect(Collectors.toList());
     }
 
 

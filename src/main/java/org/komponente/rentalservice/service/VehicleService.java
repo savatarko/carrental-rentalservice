@@ -9,6 +9,8 @@ import org.komponente.dto.vehicle.VehicleTypeCreateDto;
 import org.komponente.dto.vehicle.VehicleTypeDto;
 import org.komponente.rentalservice.domain.VehicleType;
 
+import java.util.List;
+
 public interface VehicleService {
 
     VehicleTypeDto createVehicleType(VehicleTypeCreateDto vehicleTypeCreateDto);
@@ -18,4 +20,7 @@ public interface VehicleService {
     CompanyCarDto createCompanyCar(CompanyCarCreateDto companyCarCreateDto);
 
     CompanyCarDto changePrice(CompanyCarChangeDto companyCarChangeDto);
+
+    List<VehicleTypeDto> getAllVehicleTypes();
+    List<VehicleDto> getAllVehicles();
 }
