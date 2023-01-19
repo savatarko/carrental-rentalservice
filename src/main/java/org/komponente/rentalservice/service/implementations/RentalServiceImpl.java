@@ -5,12 +5,15 @@ import io.jsonwebtoken.Claims;
 import lombok.AllArgsConstructor;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.command.ActiveMQQueue;
+import org.apache.catalina.Manager;
 import org.komponente.dto.carrental.CompanyCarDto;
 import org.komponente.dto.client.ClientDto;
 import org.komponente.dto.completedrental.CompletedRentalDto;
 import org.komponente.dto.email.CancelReservationClientNotification;
 import org.komponente.dto.email.CancelReservationManagerNotification;
+import org.komponente.dto.email.SuccessfulReservationClientNotification;
 import org.komponente.dto.email.SuccessfulReservationManagerNotification;
+import org.komponente.dto.manager.ManagerDto;
 import org.komponente.dto.requests.CarSearchFilterDto;
 import org.komponente.dto.reservation.ActiveReservationCreateDto;
 import org.komponente.dto.reservation.ActiveReservationDto;
@@ -23,6 +26,7 @@ import org.komponente.rentalservice.mapper.*;
 import org.komponente.rentalservice.repository.*;
 import org.komponente.rentalservice.security.token.TokenService;
 import org.komponente.rentalservice.service.CompanyService;
+import org.komponente.rentalservice.service.EmailService;
 import org.komponente.rentalservice.service.NormalTokenService;
 import org.komponente.rentalservice.service.RentalService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +55,7 @@ public class RentalServiceImpl implements RentalService {
     private CompletedRentalRepository completedRentalRepository;
     private CompanyCarRepository companyCarRepository;
     private Retry userServiceRetry;
+    private EmailService emailService;
 
     //@Autowired
     //private TokenService tokenService;
@@ -148,15 +153,15 @@ public class RentalServiceImpl implements RentalService {
             }
             return null;
     }
-    private ClientDto getClientDto(Long id, String authorization){
+    private UserDto getUserDto(Long id, String authorization){
         String path = userserviceurl.concat("/mail/" + id);
         RestTemplate restTemplate = new RestTemplate();
         //Long rankdiscount = restTemplate.getForObject(path, Long.class);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", authorization);
         try{
-            ClientDto clientDto = restTemplate.exchange(path, HttpMethod.GET, new HttpEntity<>(headers), ClientDto.class).getBody();
-            return clientDto;
+            UserDto userDto = restTemplate.exchange(path, HttpMethod.GET, new HttpEntity<>(headers), UserDto.class).getBody();
+            return userDto;
         }
         catch (HttpClientErrorException e){
             e.printStackTrace();
@@ -200,8 +205,15 @@ public class RentalServiceImpl implements RentalService {
         activeReservation.setTotalprice(totalprice);
         activeReservationRepository.save(activeReservation);
 
-        SuccessfulReservationManagerNotification notification = new SuccessfulReservationManagerNotification();
+        SuccessfulReservationClientNotification notification;
+        UserDto clientDto = Retry.decorateSupplier(userServiceRetry, () -> getUserDto(claims.get("id", Long.class), authorization)).get();
+        notification = NotificationMapper.activeReservationToClientNotification(activeReservation, clientDto);
+        emailService.sendMessage(notification, "reservation");
 
+        SuccessfulReservationManagerNotification managerNotification;
+        UserDto managerDto = Retry.decorateSupplier(userServiceRetry, () -> getUserDto(companyCar.getCompany().getId(), authorization)).get();
+        managerNotification = NotificationMapper.activeReservationToManagerNotification(activeReservation, managerDto);
+        emailService.sendMessage(managerNotification, "reservationmanager");
 
         return ActiveReservationMapper.activeReservationToActiveReservationDto(activeReservation);
     }
@@ -295,8 +307,8 @@ public class RentalServiceImpl implements RentalService {
         String path1 = userserviceurl.concat("/user/" + managerId);
         UserDto manager = Retry.decorateSupplier(userServiceRetry,()->  getUserDto(path1, authorization)).get();
         //TODO: notify servis ovde
-        CancelReservationClientNotification clientmessage = MessageMapper.cancelReservationClientNotificationBuilder(client);
-        CancelReservationManagerNotification managermessage = MessageMapper.cancelReservationManagerNotificationBuilder(manager);
+        CancelReservationClientNotification clientmessage = NotificationMapper.activeReservationToCancelReservationClientNotification(activeReservation, client);
+        CancelReservationManagerNotification managermessage = NotificationMapper.activeReservationToCancelReservationManagerNotification(activeReservation, manager);
         sendMessage(clientmessage, "cancelreservationclient");
         sendMessage(managermessage, "cancelreservationmanager");
     }
