@@ -17,6 +17,7 @@ public class NotificationMapper {
         notification.setStartdate(activeReservation.getBegindate().toString());
         notification.setEnddate(activeReservation.getEnddate().toString());
         notification.setTotalprice(activeReservation.getTotalprice());
+        notification.setReceiverId(clientDto.getId());
         return notification;
     }
 
@@ -27,6 +28,7 @@ public class NotificationMapper {
         notification.setVehiclename(activeReservation.getCompanyCar().getVehicle().getName());
         notification.setStartdate(activeReservation.getBegindate().toString());
         notification.setEnddate(activeReservation.getEnddate().toString());
+        notification.setReceiverId(managerDto.getId());
         return notification;
     }
 
@@ -38,6 +40,7 @@ public class NotificationMapper {
         notification.setVehiclename(activeReservation.getCompanyCar().getVehicle().getName());
         notification.setStartdate(activeReservation.getBegindate().toString());
         notification.setEnddate(activeReservation.getEnddate().toString());
+        notification.setReceiverId(clientDto.getId());
         return notification;
     }
 
@@ -49,6 +52,7 @@ public class NotificationMapper {
         notification.setVehiclename(activeReservation.getCompanyCar().getVehicle().getName());
         notification.setStartdate(activeReservation.getBegindate().toString());
         notification.setEnddate(activeReservation.getEnddate().toString());
+        notification.setReceiverId(clientDto.getId());
         return notification;
     }
 
@@ -59,6 +63,7 @@ public class NotificationMapper {
         notification.setVehiclename(activeReservation.getCompanyCar().getVehicle().getName());
         notification.setStartdate(activeReservation.getBegindate().toString());
         notification.setEnddate(activeReservation.getEnddate().toString());
+        notification.setReceiverId(managerDto.getId());
         return notification;
     }
 }
