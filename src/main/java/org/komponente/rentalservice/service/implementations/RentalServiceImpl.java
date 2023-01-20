@@ -154,7 +154,7 @@ public class RentalServiceImpl implements RentalService {
             return null;
     }
     private UserDto getUserDto(Long id, String authorization){
-        String path = userserviceurl.concat("/mail/" + id);
+        String path = userserviceurl.concat("/user/" + id);
         RestTemplate restTemplate = new RestTemplate();
         //Long rankdiscount = restTemplate.getForObject(path, Long.class);
         HttpHeaders headers = new HttpHeaders();

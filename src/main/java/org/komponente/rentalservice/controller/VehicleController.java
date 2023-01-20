@@ -58,16 +58,16 @@ public class VehicleController {
 
     @ApiOperation(value = "Get all vehicle types (manager purposes)")
     @GetMapping("/types")
-    @CheckSecurity(roles = {"ROLE_MAANGER"})
-    public ResponseEntity<List<VehicleTypeDto>> getTypes()
+    @CheckSecurity(roles = {"ROLE_MANAGER"})
+    public ResponseEntity<List<VehicleTypeDto>> getTypes(@RequestHeader("Authorization") String authorization)
     {
         return new ResponseEntity<>(vehicleService.getAllVehicleTypes(), HttpStatus.OK);
     }
 
     @ApiOperation(value = "Get all vehicle types (manager purposes)")
     @GetMapping("/all")
-    @CheckSecurity(roles = {"ROLE_MAANGER"})
-    public ResponseEntity<List<VehicleDto>> getVehicles()
+    @CheckSecurity(roles = {"ROLE_MANAGER"})
+    public ResponseEntity<List<VehicleDto>> getVehicles(@RequestHeader("Authorization") String authorization)
     {
         return new ResponseEntity<>(vehicleService.getAllVehicles(), HttpStatus.OK);
     }

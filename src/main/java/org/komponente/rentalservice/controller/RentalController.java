@@ -42,7 +42,7 @@ public class RentalController {
 
      */
 
-    @GetMapping("/find")
+    @PutMapping("/find")
     @CheckSecurity(roles = {"ROLE_ADMIN", "ROLE_MANAGER", "ROLE_CLIENT"})
     public ResponseEntity<List<CompanyCarDto>> searchVehicles(@RequestHeader("Authorization") String authorization, @RequestBody @Valid CarSearchFilterDto carSearchFilterDto){
         return new ResponseEntity<>(rentalService.searchVehicles(carSearchFilterDto), HttpStatus.OK);
@@ -63,8 +63,9 @@ public class RentalController {
     }
 
     @DeleteMapping("/cancel/{rentId}")
-    @CheckSecurity(roles = {"ROLE_CLIENT", "ROLE_MANAGER"})
+    //@CheckSecurity(roles = {"ROLE_CLIENT", "ROLE_MANAGER"})
     public ResponseEntity<?> cancelReservation(@RequestHeader("Authorization") String authorization,@PathVariable Long rentId){
+        System.out.println("test");
         rentalService.cancelReservation(rentId, authorization);
         return new ResponseEntity<>(HttpStatus.OK);
     }

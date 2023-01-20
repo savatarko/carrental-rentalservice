@@ -3,10 +3,12 @@ package org.komponente.rentalservice.service.implementations;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.komponente.rentalservice.service.EmailService;
+import org.springframework.stereotype.Service;
 
 import javax.jms.*;
 import java.io.Serializable;
 
+@Service
 public class EmailServiceImpl implements EmailService {
     @Override
     public void sendMessage(Serializable content, String queueName) {

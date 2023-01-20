@@ -8,6 +8,7 @@ import org.komponente.dto.vehicle.VehicleCreateDto;
 import org.komponente.dto.vehicle.VehicleDto;
 import org.komponente.dto.vehicle.VehicleTypeCreateDto;
 import org.komponente.dto.vehicle.VehicleTypeDto;
+import org.komponente.rentalservice.domain.Company;
 import org.komponente.rentalservice.domain.CompanyCar;
 import org.komponente.rentalservice.domain.Vehicle;
 import org.komponente.rentalservice.domain.VehicleType;
@@ -17,6 +18,7 @@ import org.komponente.rentalservice.mapper.CompanyCarMapper;
 import org.komponente.rentalservice.mapper.VehicleMapper;
 import org.komponente.rentalservice.mapper.VehicleTypeMapper;
 import org.komponente.rentalservice.repository.CompanyCarRepository;
+import org.komponente.rentalservice.repository.CompanyRepository;
 import org.komponente.rentalservice.repository.VehicleRepository;
 import org.komponente.rentalservice.repository.VehicleTypeRepository;
 import org.komponente.rentalservice.service.VehicleService;
@@ -34,6 +36,7 @@ public class VehicleServiceImpl implements VehicleService {
     private VehicleTypeRepository vehicleTypeRepository;
 
     private CompanyCarRepository companyCarRepository;
+    private CompanyRepository companyRepository;
 
 
     @Override
@@ -55,7 +58,9 @@ public class VehicleServiceImpl implements VehicleService {
 
     @Override
     public CompanyCarDto createCompanyCar(CompanyCarCreateDto companyCarCreateDto) {
-        if(companyCarRepository.findCompanyCarByCompanyAndVehicle(companyCarCreateDto.getCompanyid(), companyCarCreateDto.getVehicleid()).isPresent()) {
+        Vehicle vehicle = vehicleRepository.findById(companyCarCreateDto.getVehicleid()).orElseThrow(() -> new NotFoundException("Vehicle not found"));
+        Company company = companyRepository.findById(companyCarCreateDto.getCompanyid()).orElseThrow(() -> new NotFoundException("Company not found"));
+        if(companyCarRepository.findCompanyCarByCompanyAndVehicle(company, vehicle).isPresent()) {
             throw new AlreadyExistsException("This vehicle is already assigned to the company!");
         }
         CompanyCar companyCar = CompanyCarMapper.companyCarCreateDtoToCompanyCar(companyCarCreateDto);
