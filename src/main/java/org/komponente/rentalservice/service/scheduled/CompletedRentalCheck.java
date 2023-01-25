@@ -56,7 +56,7 @@ public class CompletedRentalCheck {
 
     @Scheduled(initialDelay = 10000, fixedDelay = 86400000)
     public void checkRentalNotification() {
-        System.out.println("Checking completed rentals...");
+        System.out.println("Checking for 3 day notifications...");
         activeReservationRepository.findAll().forEach(activeReservation -> {
             if (Duration.between(java.time.LocalDate.now().atStartOfDay(), activeReservation.getBegindate().atStartOfDay()).toDays() == 3) {
                 ReservationReminderNotification notification;

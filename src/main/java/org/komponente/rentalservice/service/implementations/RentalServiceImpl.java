@@ -208,10 +208,11 @@ public class RentalServiceImpl implements RentalService {
         SuccessfulReservationClientNotification notification;
         UserDto clientDto = Retry.decorateSupplier(userServiceRetry, () -> getUserDto(claims.get("id", Long.class), authorization)).get();
         notification = NotificationMapper.activeReservationToClientNotification(activeReservation, clientDto);
+        //System.out.println(notification);
         emailService.sendMessage(notification, "reservation");
 
         SuccessfulReservationManagerNotification managerNotification;
-        UserDto managerDto = Retry.decorateSupplier(userServiceRetry, () -> getUserDto(companyCar.getCompany().getId(), authorization)).get();
+        UserDto managerDto = Retry.decorateSupplier(userServiceRetry, () -> getUserDto(companyCar.getCompany().getManagerid(), authorization)).get();
         managerNotification = NotificationMapper.activeReservationToManagerNotification(activeReservation, managerDto);
         emailService.sendMessage(managerNotification, "reservationmanager");
 

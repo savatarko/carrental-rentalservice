@@ -19,7 +19,8 @@ public class EmailServiceImpl implements EmailService {
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             Destination destination = new ActiveMQQueue(queueName);
             MessageProducer producer = session.createProducer(destination);
-            ObjectMessage message = session.createObjectMessage();
+            //ObjectMessage message = session.createObjectMessage();
+            ObjectMessage message = session.createObjectMessage(content);
             producer.send(message);
             producer.close();
             session.close();
