@@ -46,7 +46,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@AllArgsConstructor
+//@AllArgsConstructor
 @Service
 public class RentalServiceImpl implements RentalService {
     private VehicleRepository vehicleRepository;
@@ -56,12 +56,25 @@ public class RentalServiceImpl implements RentalService {
     private CompanyCarRepository companyCarRepository;
     private Retry userServiceRetry;
     private EmailService emailService;
+    @Autowired
+    private RestTemplate restTemplate;
 
     //@Autowired
     //private TokenService tokenService;
 
     @Autowired
     private NormalTokenService normalTokenService;
+
+    public RentalServiceImpl(VehicleRepository vehicleRepository, CompanyRepository companyRepository, ActiveReservationRepository activeReservationRepository, CompletedRentalRepository completedRentalRepository, CompanyCarRepository companyCarRepository, Retry userServiceRetry, EmailService emailService, NormalTokenService normalTokenService) {
+        this.vehicleRepository = vehicleRepository;
+        this.companyRepository = companyRepository;
+        this.activeReservationRepository = activeReservationRepository;
+        this.completedRentalRepository = completedRentalRepository;
+        this.companyCarRepository = companyCarRepository;
+        this.userServiceRetry = userServiceRetry;
+        this.emailService = emailService;
+        this.normalTokenService = normalTokenService;
+    }
 
     private final String userserviceurl = "http://localhost:8081/api";
 
@@ -140,7 +153,7 @@ public class RentalServiceImpl implements RentalService {
     }
     private Long getRankDiscount(Claims claims, String authorization){
             String path = userserviceurl.concat("/rank/" + claims.get("id", Long.class));
-            RestTemplate restTemplate = new RestTemplate();
+            //RestTemplate restTemplate = new RestTemplate();
             //Long rankdiscount = restTemplate.getForObject(path, Long.class);
             HttpHeaders headers = new HttpHeaders();
             headers.add("Authorization", authorization);
@@ -155,7 +168,7 @@ public class RentalServiceImpl implements RentalService {
     }
     private UserDto getUserDto(Long id, String authorization){
         String path = userserviceurl.concat("/user/" + id);
-        RestTemplate restTemplate = new RestTemplate();
+        //RestTemplate restTemplate = new RestTemplate();
         //Long rankdiscount = restTemplate.getForObject(path, Long.class);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", authorization);
@@ -241,7 +254,7 @@ public class RentalServiceImpl implements RentalService {
 
     private Long getCompanyId(String path, String authorization){
 
-        RestTemplate restTemplate = new RestTemplate();
+        //RestTemplate restTemplate = new RestTemplate();
         //Long rankdiscount = restTemplate.getForObject(path, Long.class);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", authorization);
@@ -256,7 +269,7 @@ public class RentalServiceImpl implements RentalService {
     }
 
     private UserDto getUserDto(String path, String authorization){
-        RestTemplate restTemplate = new RestTemplate();
+        //RestTemplate restTemplate = new RestTemplate();
         //Long rankdiscount = restTemplate.getForObject(path, Long.class);
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", authorization);
@@ -276,7 +289,7 @@ public class RentalServiceImpl implements RentalService {
         Long userId = claims.get("id", Long.class);
         String role = claims.get("role", String.class);
         ActiveReservation activeReservation = activeReservationRepository.findById(rentalId).orElseThrow(()->new NotFoundException("Reservation with id " + rentalId +" not found!"));
-        if(role.equals("ROLE_USER") && !Objects.equals(activeReservation.getClientId(), userId)){
+        if(role.equals("ROLE_CLIENT") && !Objects.equals(activeReservation.getClientId(), userId)){
             throw new UnauthorizedException("Cannot cancel reservation that isn't yours!");
         }
         //TODO: za menadzera moram da pozovem userservice da vidim u kojoj firmi menadzer radi
@@ -309,8 +322,10 @@ public class RentalServiceImpl implements RentalService {
         //TODO: notify servis ovde
         CancelReservationClientNotification clientmessage = NotificationMapper.activeReservationToCancelReservationClientNotification(activeReservation, client);
         CancelReservationManagerNotification managermessage = NotificationMapper.activeReservationToCancelReservationManagerNotification(activeReservation, manager);
-        sendMessage(clientmessage, "cancelreservationclient");
-        sendMessage(managermessage, "cancelreservationmanager");
+        //sendMessage(clientmessage, "cancelreservationclient");
+        //sendMessage(managermessage, "cancelreservationmanager");
+        emailService.sendMessage(clientmessage, "cancelreservationclient");
+        emailService.sendMessage(managermessage, "cancelreservationmanager");
     }
 
     @Override

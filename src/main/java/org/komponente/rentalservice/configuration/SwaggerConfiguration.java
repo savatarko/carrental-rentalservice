@@ -3,6 +3,7 @@ package org.komponente.rentalservice.configuration;
 import org.komponente.rentalservice.controller.RentalController;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.service.Contact;
@@ -29,6 +30,11 @@ public class SwaggerConfiguration {
         return new ApiInfo("API", "API swagger definition", "1.0.0"
                 , "Terms of service", new Contact("Sava Ivkovic", "", "sivkovic1220rn@raf.rs")
                 , "", "", Collections.emptyList());
+    }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 
 
