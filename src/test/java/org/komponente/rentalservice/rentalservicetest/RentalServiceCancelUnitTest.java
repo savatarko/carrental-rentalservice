@@ -76,6 +76,15 @@ public class RentalServiceCancelUnitTest {
         companyCarCreateDto.setNumberofcars(5);
         companyCarCreateDto.setPrice(1000L);
         companyCarCreateDto.setVehicleid(1L);
+
+        Company company = new Company();
+        company.setId(1L);
+        Vehicle vehicle = new Vehicle();
+        vehicle.setId(1L);
+
+        when(companyRepository.findById(1L)).thenReturn(Optional.of(company));
+        when(vehicleRepository.findById(1L)).thenReturn(Optional.of(vehicle));
+
         CompanyCar companyCar = CompanyCarMapper.companyCarCreateDtoToCompanyCar(companyCarCreateDto);
 
         ActiveReservation activeReservation = new ActiveReservation();
