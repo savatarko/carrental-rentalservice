@@ -1,25 +1,16 @@
 package org.komponente.rentalservice.rentalservicetest;
 
-import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.komponente.dto.carrental.CompanyCarCreateDto;
 import org.komponente.dto.client.ClientCreateDto;
 import org.komponente.dto.client.ClientDto;
 import org.komponente.dto.manager.ManagerCreateDto;
 import org.komponente.dto.manager.ManagerDto;
 import org.komponente.dto.reservation.ActiveReservationCreateDto;
 import org.komponente.dto.token.TokenRequestDto;
-import org.komponente.dto.user.UserDto;
-import org.komponente.rentalservice.domain.Company;
-import org.komponente.rentalservice.domain.CompanyCar;
-import org.komponente.rentalservice.domain.Vehicle;
-import org.komponente.rentalservice.domain.VehicleType;
-import org.komponente.rentalservice.mapper.CompanyCarMapper;
-import org.komponente.rentalservice.repository.CompanyCarRepository;
-import org.komponente.rentalservice.repository.CompanyRepository;
-import org.komponente.rentalservice.repository.VehicleRepository;
-import org.komponente.rentalservice.repository.VehicleTypeRepository;
+import org.komponente.rentalservice.domain.*;
+import org.komponente.rentalservice.mapper.ActiveReservationMapper;
+import org.komponente.rentalservice.repository.*;
 import org.komponente.rentalservice.service.EmailService;
 import org.komponente.rentalservice.service.RentalService;
 import org.mockito.ArgumentMatchers;
@@ -29,7 +20,9 @@ import org.mockito.quality.Strictness;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -37,14 +30,12 @@ import org.springframework.web.client.RestTemplate;
 import java.io.Serializable;
 import java.time.LocalDate;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
 
 @SpringBootTest
 @ExtendWith({SpringExtension.class, MockitoExtension.class})
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class RentalServiceReservationIntegrationTest {
-
+public class RentalServiceCancelntegrationTest {
     @Autowired
     private RentalService rentalService;
 
@@ -56,6 +47,9 @@ public class RentalServiceReservationIntegrationTest {
     private CompanyRepository companyRepository;
     @Autowired
     private CompanyCarRepository companyCarRepository;
+
+    @Autowired
+    private ActiveReservationRepository activeReservationRepository;
 
     @MockBean
     private EmailService emailService;
@@ -159,7 +153,7 @@ public class RentalServiceReservationIntegrationTest {
     }
 
     @Test
-    public void test(){
+    public void testManager(){
 
         ClientDto clientDto = createNewUser();
         String token = getToken(clientDto);
@@ -196,13 +190,15 @@ public class RentalServiceReservationIntegrationTest {
         activeReservationCreateDto.setCompanycarid(companyCar.getId());
         activeReservationCreateDto.setBegindate(LocalDate.of(2023, 1, 1));
         activeReservationCreateDto.setEnddate(LocalDate.of(2023, 1, 5));
+        ActiveReservation activeReservation = ActiveReservationMapper.activeReservationCreateDtoToActiveReservation(activeReservationCreateDto);
+        activeReservationRepository.save(activeReservation);
 
         doNothing().when(emailService).sendMessage(
                 ArgumentMatchers.any(Serializable.class),
                 ArgumentMatchers.anyString()
         );
 
-        rentalService.reserveVehicle(activeReservationCreateDto, token);
+        rentalService.cancelReservation(activeReservation.getId(), token);
 
         vehicleTypeRepository.delete(vehicleType);
         vehicleRepository.delete(vehicle);
